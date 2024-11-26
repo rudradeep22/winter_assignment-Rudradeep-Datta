@@ -356,7 +356,7 @@ def generate_dataset(
 def main():
     """Main function to generate and save the dataset"""
 
-    MERCHANT_COUNT = 100
+    MERCHANT_COUNT = 500
     FRAUD_PERCENTAGE = 0.2  # 15% of merchants will be fraudulent
     PATTERNS = ["late_night", "high_velocity", "concentration"]
     OUTPUT_DIR = "data"
