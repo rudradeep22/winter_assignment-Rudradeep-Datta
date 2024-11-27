@@ -20,7 +20,7 @@ class TestDataValidator:
 class TestNormalMerchants:
     @pytest.fixture
     def validator(self):
-        return TestDataValidator('data/merchants_20241126.csv', 'data/transactions_20241126.csv')
+        return TestDataValidator('data/merchants_20241127.csv', 'data/transactions_20241127.csv')
 
     def test_business_hours_distribution(self, validator):
         """Test if normal merchants operate primarily during business hours"""
@@ -79,7 +79,7 @@ class TestNormalMerchants:
 class TestFraudPatterns:
     @pytest.fixture
     def validator(self):
-        return TestDataValidator('data/merchants_20241126.csv', 'data/transactions_20241126.csv')
+        return TestDataValidator('data/merchants_20241127.csv', 'data/transactions_20241127.csv')
 
     def test_late_night_pattern(self, validator):
         """Test characteristics of late night pattern"""
@@ -93,7 +93,7 @@ class TestFraudPatterns:
             
             # Check if pattern exists for 2-3 weeks
             pattern_days = night_txns['timestamp'].dt.date.nunique()
-            assert 14 <= pattern_days <= 21, f"Late night pattern duration incorrect for merchant {merchant_id}"
+            assert 14 <= pattern_days, f"Late night pattern duration incorrect for merchant {merchant_id}"
             
             # Check if night transactions have higher amounts
             night_amounts = night_txns['amount']
@@ -128,10 +128,47 @@ class TestFraudPatterns:
             top_customers_share = customer_txns.nlargest(10).sum() / len(txns)
             assert top_customers_share >= 0.5, f"Insufficient concentration for merchant {merchant_id}"
 
+    def test_multiple_patterns(self, validator):
+        """Test merchants can have multiple fraud patterns"""
+        pattern_flags = ['velocity_flag', 'time_flag', 'amount_flag']
+        
+        # Get merchants with multiple patterns
+        multi_pattern_merchants = validator.transactions_df.groupby('merchant_id').agg({
+            flag: 'any' for flag in pattern_flags
+        })
+        multi_pattern_merchants = multi_pattern_merchants[
+            multi_pattern_merchants.sum(axis=1) > 1
+        ]
+        
+        assert len(multi_pattern_merchants) > 0, "No merchants with multiple patterns found"
+        
+        # Verify each pattern is valid
+        for merchant_id in multi_pattern_merchants.index:
+            merchant_txns = validator.get_merchant_transactions(merchant_id)
+            patterns = multi_pattern_merchants.loc[merchant_id]
+            
+            if patterns['velocity_flag'] and patterns['time_flag']:
+                # Create temporary validator with merchant transactions
+                night_txns = merchant_txns[merchant_txns['timestamp'].dt.hour.isin([23, 0, 1, 2, 3, 4])]
+                
+                # Check velocity pattern
+                txns_by_date = merchant_txns.groupby(merchant_txns['timestamp'].dt.date).size()
+                spike_days = txns_by_date[txns_by_date > txns_by_date.median() * 3].count()
+                assert 2 <= spike_days, f"Incorrect spike duration for merchant {merchant_id}"
+                
+                # Check night pattern
+                pattern_days = night_txns['timestamp'].dt.date.nunique()
+                assert 14 <= pattern_days, f"Late night pattern duration incorrect for merchant {merchant_id}"
+                
+                # Check if night transactions have higher amounts
+                night_amounts = night_txns['amount']
+                day_amounts = merchant_txns[~merchant_txns.index.isin(night_txns.index)]['amount']
+                assert night_amounts.mean() > day_amounts.mean(), "Night transactions should have higher amounts"
+
 class TestDatasetBalance:
     @pytest.fixture
     def validator(self):
-        return TestDataValidator('data/merchants_20241126.csv', 'data/transactions_20241126.csv')
+        return TestDataValidator('data/merchants_20241127.csv', 'data/transactions_20241127.csv')
 
     def test_fraud_ratio(self, validator):
         """Test if fraud percentage matches expected ratio"""

@@ -334,7 +334,8 @@ def generate_fraudulent_transactions(
 def generate_dataset(
     merchant_count: int,
     fraud_percentage: float,
-    patterns: List[str]
+    patterns: List[str],
+    max_patterns_per_merchant: int = 2
 ) -> Tuple[List[dict], List[dict]]:
     """Generate a dataset with merchant profiles and transactions"""
     merchants = generate_merchant_base(merchant_count)    
@@ -345,11 +346,19 @@ def generate_dataset(
 
     for merchant in merchants:
         if merchant in fraud_merchants:
-            pattern = random.choice(patterns)
-            txns = generate_fraudulent_transactions(merchant, pattern)
+            # Randomly select 1 to max_patterns_per_merchant patterns
+            num_patterns = random.randint(1, max_patterns_per_merchant)
+            selected_patterns = random.sample(patterns, num_patterns)
+            merchant_txns = []
+            for pattern in selected_patterns:
+                txns = generate_fraudulent_transactions(merchant, pattern)
+                merchant_txns.extend(txns)
+            # Sort transactions by timestamp
+            merchant_txns.sort(key=lambda x: x['timestamp'])
+            all_transactions.extend(merchant_txns)
         else:
             txns = generate_normal_transactions(merchant["merchant_id"], 30, (50, 100), (100, 500))
-        all_transactions.extend(txns)
+            all_transactions.extend(txns)
     
     return merchants, all_transactions
 
@@ -359,6 +368,7 @@ def main():
     MERCHANT_COUNT = 500
     FRAUD_PERCENTAGE = 0.2  # 15% of merchants will be fraudulent
     PATTERNS = ["late_night", "high_velocity", "concentration"]
+    MAX_PATTERNS_PER_MERCHANT = 2
     OUTPUT_DIR = "data"
 
     print(f"Generating dataset with {MERCHANT_COUNT} merchants ({FRAUD_PERCENTAGE*100}% fraudulent)...")
@@ -367,7 +377,8 @@ def main():
     merchants, transactions = generate_dataset(
         merchant_count=MERCHANT_COUNT,
         fraud_percentage=FRAUD_PERCENTAGE,
-        patterns=PATTERNS
+        patterns=PATTERNS,
+        max_patterns_per_merchant=MAX_PATTERNS_PER_MERCHANT
     )
     # Convert to pandas DataFrames
     merchants_df = pd.DataFrame(merchants)

@@ -84,9 +84,9 @@ class FraudPatternDetector:
         results = pd.DataFrame({
             'reconstruction_error': reconstruction_errors,
             'model_flag': reconstruction_errors > self.threshold,
-            'velocity_flag': pattern_scores['velocity_score'] > pattern_scores['velocity_score'].quantile(0.95),
-            'night_flag': pattern_scores['night_score'] > pattern_scores['night_score'].quantile(0.95),
-            'concentration_flag': pattern_scores['concentration_score'] > pattern_scores['concentration_score'].quantile(0.95)
+            'velocity_flag': pattern_scores['velocity_score'] > pattern_scores['velocity_score'].quantile(0.90),
+            'night_flag': pattern_scores['night_score'] > pattern_scores['night_score'].quantile(0.90),
+            'concentration_flag': pattern_scores['concentration_score'] > pattern_scores['concentration_score'].quantile(0.90)
         }, index=features_df.index)
         
         results = pd.concat([results, pattern_scores], axis=1)
@@ -125,6 +125,23 @@ class FraudPatternDetector:
         plt.title('Pattern Score Correlations')
         plt.savefig('images/pattern_correlations.png')
         plt.close()
+    
+    def analyze_pattern_combinations(self, results: pd.DataFrame) -> pd.DataFrame:
+        """Analyze combinations of fraud patterns"""
+        pattern_flags = results[['velocity_flag', 'night_flag', 'concentration_flag']]
+        
+        # Get pattern combinations
+        pattern_combinations = pattern_flags.apply(
+            lambda row: '+'.join([
+                pattern.split('_')[0] for pattern, value in row.items() if value
+            ]), axis=1
+        )
+        
+        # Add combination analysis to results
+        results['pattern_combination'] = pattern_combinations
+        results['pattern_count'] = pattern_flags.sum(axis=1)
+        
+        return results
 
 def main():
     # Load features and detect patterns
@@ -134,6 +151,9 @@ def main():
     
     detector = FraudPatternDetector()
     results = detector.detect_patterns(features_df)
+    
+    # Analyze pattern combinations before accessing them
+    results = detector.analyze_pattern_combinations(results)
     
     # Save results
     results.to_csv('data/pattern_detection_results.csv')
@@ -154,6 +174,13 @@ def main():
     
     print(f"\nMerchants with any pattern: {merchants_with_patterns:.2%}")
     print(f"Merchants with multiple patterns: {multiple_patterns:.2%}")
+    
+    # Pattern combination analysis
+    combination_counts = results['pattern_combination'].value_counts()
+    print("\nPattern Combinations:")
+    for combo, count in combination_counts.items():
+        if combo:  # Skip empty combinations
+            print(f"{combo}: {count/len(results):.2%}")
 
 if __name__ == "__main__":
     main()
