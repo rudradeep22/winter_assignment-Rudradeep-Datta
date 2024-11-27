@@ -1,176 +1,96 @@
 # Merchant Fraud Detection System
 
 ## Overview
-The **Merchant Fraud Detection System** is designed to detect fraudulent merchant behavior using a hybrid approach that combines autoencoder-based anomaly detection with pattern-specific rules. The system identifies and analyzes three primary fraud patterns:
+This is a Python-based system that detects fraudulent merchant behavior using machine learning. It uses an autoencoder for anomaly detection combined with specific pattern recognition to identify three main types of fraud:
 
-- **High Velocity Transactions**: Sudden spikes in transaction volume.
-- **Late Night Activity**: Unusual transaction behavior during night hours, often involving higher amounts.
-- **Customer Concentration**: A small group of customers dominating the transactions, indicating possible collusion or irregular behavior.
+- High-volume transaction spikes
+- Suspicious late-night activity
+- Customer concentration (where few customers make most transactions)
 
-This system helps detect anomalies effectively, providing insights into merchant behaviors for fraud prevention.
+## How It Works
 
----
+### Data Generation
+The system starts by generating synthetic data (in `data_generation/generate.py`) that includes:
+- Merchant profiles with basic business information
+- Transaction records with timestamps, amounts, and customer details
+- Embedded fraud patterns for testing
 
-## Features
+### Feature Engineering
+`gen_features.py` processes transaction data to calculate merchant-level features:
+- Transaction velocity metrics (daily/hourly patterns)
+- Time-based patterns (night vs business hours)
+- Amount distribution statistics
+- Customer concentration metrics
 
-### 1. **Data Generation**
-Generates synthetic datasets for merchants and transactions, embedding known fraud patterns for system testing.
+### Pattern Detection
+The detection process uses two approaches:
+1. An autoencoder (`model.py`) that learns normal merchant behavior
+2. Pattern-specific scoring (`pattern.py`) that looks for known fraud patterns
 
-### 2. **Feature Engineering**
-Calculates merchant-level features from transaction data:
-- **Time-Based Patterns**: Metrics like night-time transaction ratios and business-hour activity.
-- **Amount-Based Patterns**: Statistics like average, variance, and skewness in transaction amounts.
-- **Customer Concentration**: Metrics to assess transaction distribution among customers, such as dominance ratios.
+### Real-time Analysis
+The inference engine (`inference.py`) can:
+- Analyze transactions in real-time
+- Process single merchants
 
-### 3. **Pattern Detection**
-Combines:
-- **Autoencoder Anomaly Detection**: Trained on normal behavior to detect deviations.
-- **Pattern-Specific Scoring**: Direct evaluation of known fraud patterns.
+## Project Structure
+```
+merchant-fraud-detection/
+├── data/                      # Data storage
+├── data_generation/          
+│   ├── generate.py           # Creates synthetic data
+│   └── test_generated_data.py # Tests data generation
+├── images/                   # Visualization outputs
+├── gen_features.py          # Feature engineering
+├── model.py                 # Autoencoder model
+├── pattern.py              # Pattern detection
+├── inference.py            # Real-time analysis
+└── main.py                 # Main pipeline
+```
 
----
+## How to Run
 
-## Installation
-
-Install required dependencies:
-
+1. Set up the environment:
 ```bash
 pip install -r requirements.txt
 ```
 
----
-
-## Usage
-
-### **Step 1: Generate Synthetic Data**
-Generate merchant and transaction datasets for testing:
-
-```bash
-python data_generation/generate.py
-```
-
-Outputs:
-- Synthetic data files in the `data/` directory.
-
----
-
-### **Step 2: Generate Features**
-Process transaction data into merchant-level features:
-
-```bash
-python gen_features.py
-```
-
-Outputs:
-- `data/merchant_features_normalized.csv`: Normalized feature dataset.
-
----
-
-### **Step 3: Train the Model**
-Train an autoencoder on normal merchant behavior to detect anomalies:
-
-```bash
-python model.py
-```
-
-Outputs:
-- `data/autoencoder_model.pth`: Trained autoencoder model file.
-
----
-
-### **Step 4: Detect Patterns**
-Identify fraudulent patterns and generate reports:
-
-```bash
-python pattern.py
-```
-
-Outputs:
-- `data/pattern_detection_results.csv`: Results of pattern-specific detection.
-- `images/pattern_distributions.png`: Distribution plots of pattern scores.
-- `images/pattern_correlations.png`: Heatmap of correlations between patterns.
-
----
-
-### **Step 5: Run the Complete Pipeline**
-Run all steps in a single command:
-
+2. Run the complete pipeline:
 ```bash
 python main.py
 ```
 
----
+Or run individual components:
+
+```bash
+# Generate test data
+python data_generation/generate.py
+
+# Process features
+python gen_features.py
+
+# Train model
+python model.py
+
+# Detect patterns
+python pattern.py
+
+# Run real-time analysis
+python inference.py
+```
 
 ## Output Files
-
-- **Features and Results**:
-  - `data/merchant_features_normalized.csv`: Normalized merchant features.
-  - `data/pattern_detection_results.csv`: Fraud detection results.
-
-- **Model**:
-  - `data/autoencoder_model.pth`: Trained anomaly detection model.
-
-- **Visualizations** (saved in the `images/` directory):
-  - `images/pattern_distributions.png`: Distribution plots of pattern scores.
-  - `images/pattern_correlations.png`: Correlation heatmap of fraud patterns.
-
----
+- `data/merchants_*.csv`: Merchant profiles
+- `data/transactions_*.csv`: Transaction records
+- `data/merchant_features_normalized.csv`: Processed features
+- `data/pattern_detection_results.csv`: Detection results
+- `images/`: Visualization plots
 
 ## Testing
-
-Run tests for synthetic data generation:
-
+Run the tests with:
 ```bash
 pytest data_generation/test_generated_data.py
 ```
 
 ---
 
-## Performance Metrics
-
-- **Detection Rates**:
-  - Model-based anomaly detection rate.
-  - Detection rates for individual fraud patterns.
-  
-- **False Positive Rates**:
-  - Evaluate how often the system flags non-fraudulent behavior incorrectly.
-
-- **Pattern Overlap Analysis**:
-  - Understand the overlap between fraud patterns to refine detection strategies.
-
----
-
-## Directory Structure
-
-```
-.
-├── data/
-│   ├── transactions.csv
-│   ├── merchant_features_normalized.csv
-│   ├── autoencoder_model.pth
-│   ├── pattern_detection_results.csv
-├── data_generation/
-│   ├── generate.py
-│   ├── test_generated_data.py
-├── images/
-│   ├── pattern_distributions.png
-│   ├── pattern_correlations.png
-│   ├── error_distribution.png
-├── gen_features.py
-├── model.py
-├── pattern.py
-├── main.py
-├── requirements.txt
-├── README.md
-```
-
----
-
-## Example Results
-
-- **Fraud Pattern Distribution**:  
-  ![Pattern Distribution](images/pattern_distributions.png)
-
-- **Pattern Correlation Heatmap**:  
-  ![Pattern Correlations](images/pattern_correlations.png)
-
-This system enables a comprehensive view of fraudulent merchant behavior, combining statistical insights with machine learning for reliable detection.
+This project was created as part of a coding assignment to demonstrate fraud detection techniques using Python and machine learning.
