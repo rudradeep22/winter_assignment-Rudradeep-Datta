@@ -183,7 +183,7 @@ def main():
         # Initialize and train model
         input_dim = X_train.shape[1]
         model = Autoencoder(input_dim)
-        training_history = train_autoencoder(model, train_loader, val_loader, epochs=1000, learning_rate=0.0001)
+        training_history = train_autoencoder(model, train_loader, val_loader, epochs=2000, learning_rate=0.0001)
         
         print("\nEvaluating model performance...")
         # Evaluate model and generate visualizations
